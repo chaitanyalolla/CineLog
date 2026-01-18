@@ -1,6 +1,6 @@
 "use client";
 
-import { articlesApi } from "@/lib/api";
+import { articlesApi, moviesApi } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,20 +9,24 @@ export default function ArticleForm() {
 	const router = useRouter();
 	const params = useParams();
 
-	const articleId = params.id;
+	const movieId = params.id;
+	const articleId = params.articleId;
 	const isEditing = !!articleId;
 
 	const [article, setArticle] = useState({
 		title: "",
 		body: "",
 		published: false,
+		movie_id: movieId,
 	});
 	const [error, setError] = useState(false);
+	const [movie, setMovie] = useState(null);
 
 	useEffect(() => {
 		if (isEditing && articleId) {
-			// Fetch the article
-			articlesApi.getOne(articleId).then((data) => setArticle(data));
+			articlesApi.getOne(articleId).then((data) => {
+				setArticle(data.article);
+			});
 		}
 	}, [articleId, isEditing]);
 
@@ -30,14 +34,13 @@ export default function ArticleForm() {
 		e.preventDefault();
 
 		try {
-			if (isEditing) {
-				const result = await articlesApi.update(articleId, article);
-			} else {
-				const result = await articlesApi.create(article);
-			}
-			router.push("/");
-		} catch (error) {
-			setError(error.message);
+			await articlesApi.changeArticle(
+				articleId ? Number(articleId) : undefined,
+				article,
+			);
+			router.push(`/movies/${movieId}`);
+		} catch (err) {
+			setError(err.message);
 		}
 	};
 

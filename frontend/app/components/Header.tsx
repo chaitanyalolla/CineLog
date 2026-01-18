@@ -4,12 +4,14 @@ import { useAuth } from "@/lib/context/auth";
 import { useTheme } from "@/lib/context/theme";
 import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Modal from "@/app/components/Modal";
 
 export default function Header() {
 	const { user, logout } = useAuth();
 	const { theme, toggleTheme } = useTheme();
 	const [showLogout, setShowLogout] = useState(false);
+	const router = useRouter();
 
 	const handleLogout = () => {
 		logout();
@@ -18,7 +20,7 @@ export default function Header() {
 	return (
 		<div className="flex justify-between items-center mb-8">
 			<div>
-				<h1 className="text-4xl font-bold">BlogApp</h1>
+				<h1 className="text-4xl font-bold">CineLog</h1>
 				<p className="text-sm mt-1">Welcome, {user?.name}</p>
 			</div>
 			<div className="flex gap-6">
@@ -40,6 +42,8 @@ export default function Header() {
 				isOpen={showLogout}
 				onClose={() => setShowLogout(false)}
 				onConfirm={handleLogout}
+				confirmText="Yes"
+				cancelText="No"
 				title="Logout"
 				message="Are you sure you want to logout?"
 			/>

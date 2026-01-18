@@ -11,17 +11,27 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
-  root "articles#index"
-
-  resources :articles
   
   namespace :api do
-    namespace :v1 do
-      resources :articles
-
-      # Authentication routes
-      post 'auth/register', to: 'authentication#register'
-      post 'auth/login', to: 'authentication#login'
+  namespace :v1 do
+    root 'articles#index'
+    
+    # Authentication routes
+    post 'auth/register', to: 'authentication#register'
+    post 'auth/login', to: 'authentication#login'
+    
+    # Movies
+    resources :movies, only: [:index, :show] do
+      # Nested creation only (when creating from movie page)
+      resources :articles, only: [:create]
+      resources :ratings, only: [:create]
     end
+    
+    # Articles - full CRUD at top level (for user's article management)
+    resources :articles, except: [:create]  # create handled by nested route
+    
+    # Ratings - top level for update/destroy
+    resources :ratings, only: [:update, :destroy]
   end
+end
 end

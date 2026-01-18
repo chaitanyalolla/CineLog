@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { articlesApi } from "@/lib/api";
+import { articlesApi, moviesApi } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/app/components/Modal";
+import Search from "@/app/components/Search";
 import { useAuth } from "@/lib/context/auth";
 import { useTheme } from "@/lib/context/theme";
 import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
@@ -13,6 +14,10 @@ export default function Home() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [articles, setArticles] = useState([]);
+  const [query, setQuery] = useState("");
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const router = useRouter();
@@ -29,6 +34,31 @@ export default function Home() {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (!query) return;
+    if (query.length < 4) {
+      setMovies([]);
+      return;
+    }
+
+    const delay = setTimeout(() => {
+      const fetchMovies = async () => {
+        setLoading(true);
+        try {
+          const response = await moviesApi.search(query);
+          setMovies(response);
+        } catch (error) {
+          setError(error);
+          debugger;
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchMovies();
+    }, 500);
+    return () => clearTimeout(delay);
+  }, [query]);
+
   const handleDeleteClick = (article) => {
     setSelectedArticle(article);
     setShowModal(true);
@@ -42,9 +72,8 @@ export default function Home() {
     setShowModal(false);
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
+  const handleClick = (id) => {
+    router.push(`/movies/${id}`);
   };
 
   if (isLoading) {
@@ -63,54 +92,56 @@ export default function Home() {
   }
 
   return (
-    <div
-      className={`${theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"} p-2`}
-    >
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-800">BlogApp</h1>
-          <p className="text-sm text-gray-600 mt-1">Welcome, {user?.name}</p>
-        </div>
-        <div className="flex gap-3">
-          <Link
-            href="/articles/new"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-          >
-            New Article
-          </Link>
-          <button onClick={toggleTheme} className="cursor-pointer">
-            {theme === "light" ? (
-              <MoonIcon className="size-6" />
-            ) : (
-              <SunIcon className="size-6" />
-            )}
-          </button>
-          <button
-            onClick={handleLogout}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors cursor-pointer"
-          >
-            Logout
-          </button>
-        </div>
+    <div>
+      <div className="space-y-6">
+        <Search
+          placeholder="Search movies here"
+          input={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
       </div>
 
-      <div className="space-y-6">
+      {movies.length > 0 && (
+        <div className="movie-grid space-y-6">
+          {movies.map((movie) => (
+            <div className="movie-card" key={movie.imdbID}>
+              <img
+                src={
+                  movie.Poster !== "N/A"
+                    ? movie.Poster
+                    : "https://via.placeholder.com/150"
+                }
+                alt={movie.Title}
+                onClick={() => handleClick(movie.imdbID)}
+              />
+              <div className="movie-card-content">
+                <h3>{movie.Title}</h3>
+                <p>{movie.Year}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-6 mt-6">
         {articles.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">
-              No articles yet. Create your first article!
+            <p className="text-lg">
+              No articles yet. Select a movie to create your first article!
             </p>
           </div>
         ) : (
           articles.map((article) => (
             <div
               key={article.id}
-              className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow bg-white"
+              className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
             >
               <div className="flex justify-between">
-                <Link href={`/articles/${article.id}/edit`}>
+                <Link
+                  href={`movies/${article.movie.imdb_id}/articles/${article.id}/edit`}
+                >
                   <h2 className="text-2xl font-bold mb-2 text-blue-600 hover:text-blue-800 cursor-pointer">
-                    {article.title}
+                    {article.movie.title} - {article.title}
                   </h2>
                 </Link>
                 <button
@@ -120,7 +151,7 @@ export default function Home() {
                   Delete Article
                 </button>
               </div>
-              <p className="text-gray-700 mb-4 leading-relaxed">
+              <p className="mb-4 leading-relaxed">
                 {article.body.substring(0, 200)}
                 {article.body.length > 200 && "..."}
               </p>
@@ -134,7 +165,7 @@ export default function Home() {
                 >
                   {article.published ? "Published" : "Draft"}
                 </span>
-                <span className="text-gray-500">
+                <span className="">
                   {new Date(article.created_at).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
@@ -151,6 +182,8 @@ export default function Home() {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onConfirm={confirmDelete}
+        confirmText="Delete"
+        cancelText="Cancel"
         title="Delete Article"
         message={`Are you sure you want to delete "${selectedArticle?.title}"?`}
       />

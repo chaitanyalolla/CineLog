@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { moviesApi, ratingsApi } from "@/lib/api";
 import Modal from "@/app/components/Modal";
+import Breadcrumbs from "@/app/components/Breadcrumbs";
 import Link from "next/link";
 
 export default function MovieDetails() {
@@ -49,6 +50,7 @@ export default function MovieDetails() {
 
 	return (
 		<div>
+			<Breadcrumbs customItems={[{ label: movie?.Title || "Movie Details" }]} />
 			{movie && (
 				<div className="flex justify-between">
 					<div className="space-y-4">

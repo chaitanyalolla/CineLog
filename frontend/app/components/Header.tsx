@@ -15,7 +15,8 @@ export default function Header() {
 
 	const handleLogout = () => {
 		logout();
-		router.push("/login");
+		setShowLogout(false);
+		router.replace("/login");
 	};
 	return (
 		<div className="flex justify-between items-center mb-8">

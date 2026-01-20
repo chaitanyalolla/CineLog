@@ -3,6 +3,7 @@
 import { articlesApi, moviesApi } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Breadcrumbs from "@/app/components/Breadcrumbs";
 import Link from "next/link";
 
 export default function ArticleForm() {
@@ -23,12 +24,18 @@ export default function ArticleForm() {
 	const [movie, setMovie] = useState(null);
 
 	useEffect(() => {
-		if (isEditing && articleId) {
-			articlesApi.getOne(articleId).then((data) => {
+		const fetchData = async () => {
+			if (isEditing && articleId) {
+				const data = await articlesApi.getOne(Number(articleId));
 				setArticle(data.article);
-			});
-		}
-	}, [articleId, isEditing]);
+				setMovie(data.movie);
+			} else if (movieId) {
+				const movieData = await moviesApi.getOne(movieId);
+				setMovie(movieData.movie);
+			}
+		};
+		fetchData();
+	}, [movieId, articleId, isEditing]);
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -51,12 +58,15 @@ export default function ArticleForm() {
 					{isEditing ? "Edit" : "Create"} Article
 				</h1>
 			</div>
-			<Link
-				href="/"
-				className="my-2 text-blue-500 font-semibold transition-colors"
-			>
-				Home
-			</Link>
+			<Breadcrumbs
+				customItems={[
+					{
+						label: isEditing ? movie?.title : movie?.Title,
+						href: `/movies/${movieId}`,
+					},
+					{ label: isEditing ? "Edit Article" : "New Article" },
+				]}
+			/>
 			<form className="px-8 py-6 mb-4" onSubmit={handleSubmit}>
 				<div className="mb-4">
 					<label className="block text-sm font-bold mb-2" htmlFor="title">
